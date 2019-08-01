@@ -68,8 +68,8 @@ The analysis may take a while...
     # required PID response data
     pid_analysis_error = False
     try:
-        rate_ctrl_status = ulog.get_dataset('rate_ctrl_status')
-        gyro_time = rate_ctrl_status.data['timestamp']
+        vehicle_angular_velocity = ulog.get_dataset('vehicle_angular_velocity')
+        gyro_time = vehicle_angular_velocity.data['timestamp']
         vehicle_attitude = ulog.get_dataset('vehicle_attitude')
         attitude_time = vehicle_attitude.data['timestamp']
         vehicle_rates_setpoint = ulog.get_dataset('vehicle_rates_setpoint')
@@ -82,7 +82,7 @@ The analysis may take a while...
         print(type(error), ":", error)
         pid_analysis_error = True
         div = Div(text="<p><b>Error</b>: missing topics or data for PID analysis "
-                  "(required topics: rate_ctrl_status, vehicle_rates_setpoint, "
+                  "(required topics: vehicle_angular_velocity, vehicle_rates_setpoint, "
                   "vehicle_attitude, vehicle_attitude_setpoint and "
                   "actuator_controls_0).</p>", width=int(plot_width*0.9))
         plots.append(widgetbox(div, width=int(plot_width*0.9)))
@@ -117,8 +117,8 @@ The analysis may take a while...
         p.patch(time_controls, thrust, line_width=0, fill_color='#555555',
                 fill_alpha=0.4, alpha=0, legend='Thrust [0, {:}]'.format(thrust_max))
 
-        data_plot.change_dataset('vehicle_attitude')
-        data_plot.add_graph([lambda data: (axis+'speed', np.rad2deg(data[axis+'speed']))],
+        data_plot.change_dataset('vehicle_angular_velocity')
+        data_plot.add_graph([lambda data: (index, np.rad2deg(data[xyz[index]]))],
                             colors3[0:1], [axis_name+' Rate Estimated'], mark_nan=True)
         data_plot.change_dataset('vehicle_rates_setpoint')
         data_plot.add_graph([lambda data: (axis, np.rad2deg(data[axis]))],
@@ -141,7 +141,7 @@ The analysis may take a while...
         # PID response
         if not pid_analysis_error:
             try:
-                gyro_rate = np.rad2deg(rate_ctrl_status.data[axis+'speed'])
+                gyro_rate = np.rad2deg(vehicle_angular_velocity.data[xyz[index]])
                 setpoint = _resample(vehicle_rates_setpoint.data['timestamp'],
                                      np.rad2deg(vehicle_rates_setpoint.data[axis]),
                                      gyro_time)
