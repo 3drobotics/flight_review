@@ -201,8 +201,6 @@ SDLOG_UTC_OFFSET: {}'''.format(utctimestamp.strftime('%d-%m-%Y %H:%M'), utc_offs
     if 'sys_uuid' in ulog.msg_info_dict and sys_hardware != 'SITL' and \
             sys_hardware != 'PX4_SITL':
         sys_uuid = escape(ulog.msg_info_dict['sys_uuid'])
-        if vehicle_data is not None and vehicle_data.name != '':
-            sys_uuid = sys_uuid + ' (' + vehicle_data.name + ')'
         if len(sys_uuid) > 0:
             table_text_left.append(('Vehicle UUID', sys_uuid))
 
