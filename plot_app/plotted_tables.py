@@ -245,16 +245,23 @@ SDLOG_UTC_OFFSET: {}'''.format(utctimestamp.strftime('%d-%m-%Y %H:%M'), utc_offs
                 dz = pos_z[index] - pos_z[last_index]
                 total_dist_m += sqrt(dx*dx + dy*dy + dz*dz)
             last_index = index
+
+        def format_distance_km(distance): # distance is meters
+            return [f"{distance/1000:.2f} km", f"{distance/1609.34:.2f} mi"]
+
+        def format_distance_m(distance, significant_digits): # distance is meters
+            return [f"{distance:.{significant_digits}f} m", f"{distance*3.28084:.{significant_digits}f} ft"]
+
         if total_dist_m < 1:
             pass # ignore
         elif total_dist_m > 1000:
-            table_text_right.append(('Distance', "{:.2f} km".format(total_dist_m/1000)))
+            table_text_right.append(('Distance', format_distance_km(total_dist_m)))
         else:
-            table_text_right.append(('Distance', "{:.1f} m".format(total_dist_m)))
+            table_text_right.append(('Distance', format_distance_m(total_dist_m, 1)))
 
         if len(pos_z) > 0:
             max_alt_diff = np.amax(pos_z) - np.amin(pos_z)
-            table_text_right.append(('Max Altitude Difference', "{:.0f} m".format(max_alt_diff)))
+            table_text_right.append(('Max Altitude Difference', format_distance_m(max_alt_diff, 0)))
 
         table_text_right.append(('', '')) # spacing
 
@@ -263,9 +270,13 @@ SDLOG_UTC_OFFSET: {}'''.format(utctimestamp.strftime('%d-%m-%Y %H:%M'), utc_offs
             max_h_speed = np.amax(np.sqrt(np.square(vel_x) + np.square(vel_y)))
             speed_vector = np.sqrt(np.square(vel_x) + np.square(vel_y) + np.square(vel_z))
             max_speed = np.amax(speed_vector)
+
+            def format_speed(speed): # speed is meters per second
+                return [f"{speed*3.6:.1f} km/h", f"{speed*2.2369:.1f} mph"]
+
             if vtol_states is None:
                 mean_speed = np.mean(speed_vector)
-                table_text_right.append(('Average Speed', "{:.1f} km/h".format(mean_speed*3.6)))
+                table_text_right.append(('Average Speed', format_speed(mean_speed)))
             else:
                 local_pos_timestamp = local_pos.data['timestamp'][local_vel_valid_indices]
                 speed_vector = speed_vector.reshape((len(speed_vector),))
@@ -273,14 +284,14 @@ SDLOG_UTC_OFFSET: {}'''.format(utctimestamp.strftime('%d-%m-%Y %H:%M'), utc_offs
                     vtol_states, local_pos_timestamp, speed_vector)
                 if mean_speed_mc is not None:
                     table_text_right.append(
-                        ('Average Speed MC', "{:.1f} km/h".format(mean_speed_mc*3.6)))
+                        ('Average Speed MC', format_speed(mean_speed_mc)))
                 if mean_speed_fw is not None:
                     table_text_right.append(
-                        ('Average Speed FW', "{:.1f} km/h".format(mean_speed_fw*3.6)))
-            table_text_right.append(('Max Speed', "{:.1f} km/h".format(max_speed*3.6)))
-            table_text_right.append(('Max Speed Horizontal', "{:.1f} km/h".format(max_h_speed*3.6)))
-            table_text_right.append(('Max Speed Up', "{:.1f} km/h".format(np.amax(-vel_z)*3.6)))
-            table_text_right.append(('Max Speed Down', "{:.1f} km/h".format(-np.amin(-vel_z)*3.6)))
+                        ('Average Speed FW', format_speed(mean_speed_fw)))
+            table_text_right.append(('Max Speed', format_speed(max_speed)))
+            table_text_right.append(('Max Speed Horizontal', format_speed(max_h_speed)))
+            table_text_right.append(('Max Speed Up', format_speed(np.amax(-vel_z))))
+            table_text_right.append(('Max Speed Down', format_speed(-np.amin(-vel_z))))
 
             table_text_right.append(('', '')) # spacing
 
@@ -344,10 +355,16 @@ SDLOG_UTC_OFFSET: {}'''.format(utctimestamp.strftime('%d-%m-%Y %H:%M'), utc_offs
         padding_text = ''
         for label, value in rows_list:
             if label == '': # empty label means: add some row spacing
-                padding_text = ' style="padding-top: 0.5em;" '
+                padding_text = ' style="padding-top: 0.5em;"'
             else:
-                table += ('<tr><td '+padding_text+'class="left">'+label+
-                          ':</td><td'+padding_text+'>'+value+'</td></tr>')
+                table += '<tr>'
+                table += '<td'+padding_text+' class="left">'+label+':</td>'
+                if isinstance(value, list):
+                    for display in value:
+                        table += '<td'+padding_text+'>'+display+'</td>'
+                else:
+                    table += '<td'+padding_text+'>'+value+'</td>'
+                table += '</tr>'
                 padding_text = ''
         return table + '</table>'
 
