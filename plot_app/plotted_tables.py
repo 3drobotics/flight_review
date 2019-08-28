@@ -212,8 +212,6 @@ SDLOG_UTC_OFFSET: {}'''.format(utctimestamp.strftime('%d-%m-%Y %H:%M'), utc_offs
         table_text_left.append(('Wind Speed', db_data.wind_speed_str()))
     if len(db_data.rating) > 0:
         table_text_left.append(('Flight Rating', db_data.rating_str()))
-    if len(db_data.feedback) > 0:
-        table_text_left.append(('Feedback', db_data.feedback.replace('\n', '<br/>')))
     if len(db_data.video_url) > 0:
         table_text_left.append(('Video', '<a href="'+db_data.video_url+
                                 '" target="_blank">'+db_data.video_url+'</a>'))
@@ -373,8 +371,14 @@ SDLOG_UTC_OFFSET: {}'''.format(utctimestamp.strftime('%d-%m-%Y %H:%M'), utc_offs
         table_text_right,
         'Note: most of these values are based on estimations from the vehicle,'
         ' and thus require an accurate estimator')
-    html_tables = ('<p><div style="display: flex; justify-content: space-between;">'+
-                   left_table+right_table+'</div></p>')
+    html_tables = ('<div style="margin: 1em 0; display: flex; justify-content: space-between;">'+
+                   left_table+right_table+'</div>')
+    
+    if len(db_data.feedback) > 0:
+        html_tables += '<section style="margin: 1em 0">'
+        html_tables += '<header>Feedback:</header>'
+        html_tables += '<div>'+db_data.feedback.replace('\n', '<br/>')+'</div>'
+        html_tables += '</section>'
 
     return html_tables
 
