@@ -1,0 +1,90 @@
+
+{% include 'header.html' %}
+
+<h3>Browse public Log Files (FAA)</h3>
+
+<p>
+Use <a href="https://github.com/PX4/flight_review/blob/master/download_logs.py">
+this script</a> for automated download of public log files.
+</p>
+
+<table id="logs_table" style="border-collapse: collapse !important"
+	class="table table-sm table-striped table-bordered table-condensed">
+        <thead>
+            <tr>
+                <th>Drone ID</th>
+                <th>UAS Model</th>
+                <th>Start Hours</th>
+                <th>End Hours</th>
+                <th>Flight Duration</th>
+                <th>Flight Rating</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+</table>
+
+
+{% include 'footer.html' %}
+
+
+<!-- include & setup DataTables library (with Bootstrap stylesheets) -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css">
+
+<script type="text/javascript" charset="utf-8" src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+
+<script type="text/javascript" charset="utf-8" src="https://cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+
+
+<script type="text/javascript">
+
+$(document).ready(function() {
+    var options = {
+        "order": [[2, 'desc']], 
+        "ordering": true,
+        "lengthMenu": [10, 25, 50, 75, 100],
+
+        "columns": [
+            null, // Drone ID
+            {"orderable": false }, // UAS Model
+            null, // Start Hours
+            {"orderable": false }, // End Hours
+            null, // Flight Duration
+            {"orderable": false }, // Flight Rating
+        ],
+
+        "language": {
+            "infoFiltered": "<br>(filtered from _MAX_ total entries)",
+        },
+
+        "serverSide": true,
+        "ajax": "browse_data_retrieval",
+    };
+
+{% if initial_search %}
+    options.search = {
+        "search": {{ initial_search }},
+    };
+{% endif %}
+
+    var table = $('#logs_table').DataTable(options);
+    table.on('xhr', function () {
+        try {
+            var search_term = table.search();
+            var url = new URL(window.location.href);
+            if (search_term === '') {
+                url.searchParams.delete('search');
+            } else {
+                url.searchParams.set('search', table.search());
+            }
+            window.history.replaceState(null, null, url);
+        } catch (e) {
+        }
+    });
+
+});
+
+</script>
+
+</body>
+</html>
