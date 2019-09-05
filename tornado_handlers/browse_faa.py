@@ -115,7 +115,7 @@ class BrowseFAADataRetrievalHandler(tornado.web.RequestHandler):
             return Columns([
                 db_data.vehicle_uuid,
                 'H520-G', # hardcoded 😱
-                '<a href="/plot_app?log='+log_id+'">'+start_time_str+'</a>',
+                '<a href="/plot_app?log='+log_id+'&faa=true">'+start_time_str+'</a>',
                 end_time_str,
                 duration_str,
                 rating_str,

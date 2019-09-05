@@ -1,0 +1,86 @@
+<table class="table table-sm table-striped table-bordered table-condensed faa-table">
+    <thead>
+        <tr>
+            <th>Drone ID</th>
+            <th>UAS Model</th>
+            <th>Start Hours</th>
+            <th>End Hours</th>
+            <th>Flight Duration</th>
+            <th>Flight Rating</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>{{ vehicle_uuid }}</td>
+            <td>H520-G</td>
+            <td><time datetime="{{ start_time_str }}">{{ start_time_str }}</time></td>
+            <td><time datetime="{{ start_time_str }}">{{ end_time_str }}</time></td>
+            <td>{{ duration }}</td>
+            <td>{{ rating }}</td>
+        </tr>
+    </tbody>
+</table>
+
+<section class="faa-info">
+    <dl class="left">
+        <dt>Description</dt>
+        <dd>{{ description }}</dd>
+        <dt>Total Hours Flown</dt>
+        <dd>{{ flight_time_str }}</dd>
+        <dt>Flight Conditions</dt>
+        <dd>{{ feedback|replace('\n', '<br/>') }}</dd>
+    </dl>
+
+    <section class="right">
+        <dl>
+{% if distance['Max Altitude Difference'] %}
+            <dt>Max Altitude</dt>
+            <dd>{{ "%.0f"|format(distance['Max Altitude Difference'] * 3.28084) }} ft</dd>
+{% endif %}
+            <dt>Distance</dt>
+{% if distance['Absolute'] / 1609.34 > 1 %}
+            <dd>{{ "%.2f"|format(distance['Absolute'] / 1609.34) }} mi</dd>
+{% else %}
+            <dd>{{ "%.1f"|format(distance['Absolute'] * 3.28084) }} ft</dd>
+{% endif %}
+        </dl>
+        <dl>
+{% if speed['Average Speed'] %}
+            <dt>Avg Speed</dt>
+            <dd>{{ "%.1f"|format(speed['Average Speed']) }} mph</dd>
+{% endif %}
+{% if speed['Average Speed MC'] %}
+            <dt>Avg Speed MC</dt>
+            <dd>{{ "%.1f"|format(speed['Average Speed MC']) }} mph</dd>
+{% endif %}
+{% if speed['Average Speed FW'] %}
+            <dt>Avg Speed FW</dt>
+            <dd>{{ "%.1f"|format(speed['Average Speed FW']) }} mph</dd>
+{% endif %}
+            <dt>Max Speed</dt>
+            <dd>{{ "%.1f"|format(speed['Max Speed']) }} mph</dd>
+            <dt>Max Speed Horz</dt>
+            <dd>{{ "%.1f"|format(speed['Max Speed Horizontal']) }} mph</dd>
+            <dt>Max Speed Up</dt>
+            <dd>{{ "%.1f"|format(speed['Max Speed Up']) }} mph</dd>
+            <dt>Max Speed Down</dt>
+            <dd>{{ "%.1f"|format(speed['Max Speed Down']) }} mph</dd>
+        </dl>
+        <dl>
+            <dt>Avg Current</dt>
+            <dd>{{ "%.1f"|format(current['Average Current']) }} A</dd>
+            <dt>Max Current</dt>
+            <dd>{{ "%.1f"|format(current['Max Current']) }} A</dd>
+        </dl>
+    </section>
+</section>
+
+<script>
+{
+    // display times in local timezone
+    var times = document.querySelectorAll('time[datetime]');
+    for (var i = 0; i < times.length; i += 1) {
+        times[i].innerText = new Date(times[i].getAttribute('datetime')).toLocaleString();
+    }
+}
+</script>

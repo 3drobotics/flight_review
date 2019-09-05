@@ -1,5 +1,8 @@
 """ methods to generate various tables used in configured_plots.py """
 
+import re
+import os
+
 from html import escape
 from math import sqrt
 import datetime
@@ -10,10 +13,15 @@ from bokeh.layouts import widgetbox
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import DataTable, TableColumn, Div
 
+from jinja2 import evalcontextfilter, Markup, Environment, FileSystemLoader
+
 from helper import (
     get_default_parameters, get_airframe_name,
     get_total_flight_time, error_labels_table
     )
+
+_ENV = Environment(loader=FileSystemLoader(
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), '../plot_app/templates')))
 
 #pylint: disable=consider-using-enumerate,too-many-statements
 
@@ -78,6 +86,113 @@ def get_heading_html(ulog, px4_ulog, db_data, link_to_3d_page,
     if db_data.description != '':
         title_html += "<h5>"+db_data.description+"</h5>"
     return title_html
+
+def get_speed(ulog, vtol_states):
+    """
+    Get average and max (absolute, horizontal, up, down) speeds in meters per second
+    """
+
+    local_pos = ulog.get_dataset('vehicle_local_position')
+    pos_x = local_pos.data['x']
+    pos_y = local_pos.data['y']
+    pos_z = local_pos.data['z']
+    pos_xyz_valid = np.multiply(local_pos.data['xy_valid'], local_pos.data['z_valid'])
+    local_vel_valid_indices = np.argwhere(np.multiply(local_pos.data['v_xy_valid'],
+                                                      local_pos.data['v_z_valid']) > 0)
+    vel_x = local_pos.data['vx'][local_vel_valid_indices]
+    vel_y = local_pos.data['vy'][local_vel_valid_indices]
+    vel_z = local_pos.data['vz'][local_vel_valid_indices]
+
+    speed = {}
+
+    if len(vel_x) > 0:
+        max_h_speed = np.amax(np.sqrt(np.square(vel_x) + np.square(vel_y)))
+        speed_vector = np.sqrt(np.square(vel_x) + np.square(vel_y) + np.square(vel_z))
+        max_speed = np.amax(speed_vector)
+
+        if vtol_states is None:
+            mean_speed = np.mean(speed_vector)
+            speed['Average Speed'] = mean_speed
+        else:
+            local_pos_timestamp = local_pos.data['timestamp'][local_vel_valid_indices]
+            speed_vector = speed_vector.reshape((len(speed_vector),))
+            mean_speed_mc, mean_speed_fw = _get_vtol_means_per_mode(
+                vtol_states, local_pos_timestamp, speed_vector)
+            if mean_speed_mc is not None:
+                speed['Average Speed MC'] = mean_speed_mc
+            if mean_speed_fw is not None:
+                speed['Average Speed FW'] = mean_speed_fw
+
+        speed['Max Speed'] = max_speed
+        speed['Max Speed Horizontal'] = max_h_speed
+        speed['Max Speed Up'] = np.amax(-vel_z)
+        speed['Max Speed Down'] = -np.amin(-vel_z)
+
+    return speed
+
+def get_current(ulog, vtol_states):
+    """
+    Get average and max currents in amps
+    """
+
+    current = {}
+    battery_status = ulog.get_dataset('battery_status')
+    battery_current = battery_status.data['current_a']
+    if len(battery_current) > 0:
+        max_current = np.amax(battery_current)
+        if max_current > 0.1:
+            if vtol_states is None:
+                mean_current = np.mean(battery_current)
+                current['Average Current'] = mean_current
+            else:
+                mean_current_mc, mean_current_fw = _get_vtol_means_per_mode(
+                    vtol_states, battery_status.data['timestamp'], battery_current)
+                if mean_current_mc is not None:
+                    current['Average Current MC'] = mean_current_mc
+                if mean_current_fw is not None:
+                    current['Average Current FW'] = mean_current_fw
+
+            current['Max Current'] = max_current
+
+    return current
+
+def get_distance(ulog, vtol_states):
+    """
+    Get distance traveled in meters
+    """
+
+    local_pos = ulog.get_dataset('vehicle_local_position')
+    pos_x = local_pos.data['x']
+    pos_y = local_pos.data['y']
+    pos_z = local_pos.data['z']
+    pos_xyz_valid = np.multiply(local_pos.data['xy_valid'], local_pos.data['z_valid'])
+    local_vel_valid_indices = np.argwhere(np.multiply(local_pos.data['v_xy_valid'],
+                                                        local_pos.data['v_z_valid']) > 0)
+    vel_x = local_pos.data['vx'][local_vel_valid_indices]
+    vel_y = local_pos.data['vy'][local_vel_valid_indices]
+    vel_z = local_pos.data['vz'][local_vel_valid_indices]
+
+    # total distance (take only valid indexes)
+    total_dist_m = 0
+    last_index = -2
+    for valid_index in np.argwhere(pos_xyz_valid > 0):
+        index = valid_index[0]
+        if index == last_index + 1:
+            dx = pos_x[index] - pos_x[last_index]
+            dy = pos_y[index] - pos_y[last_index]
+            dz = pos_z[index] - pos_z[last_index]
+            total_dist_m += sqrt(dx*dx + dy*dy + dz*dz)
+        last_index = index
+
+    distance = {
+        'Absolute': total_dist_m,
+    }
+
+    if len(pos_z) > 0:
+        max_alt_diff = np.amax(pos_z) - np.amin(pos_z)
+        distance['Max Altitude Difference'] = max_alt_diff
+
+    return distance
 
 def get_info_table_html(ulog, px4_ulog, db_data, vehicle_data, vtol_states):
     """
@@ -381,6 +496,101 @@ SDLOG_UTC_OFFSET: {}'''.format(utctimestamp.strftime('%d-%m-%Y %H:%M'), utc_offs
         html_tables += '</section>'
 
     return html_tables
+
+def get_faa_info_table_html(ulog, px4_ulog, db_data, vehicle_data, vtol_states):
+    """
+    Get the html (as string) for a table with additional text info,
+    such as logging duration, max speed etc.
+    """
+
+    sys_hardware = ''
+    if 'ver_hw' in ulog.msg_info_dict:
+        sys_hardware = escape(ulog.msg_info_dict['ver_hw'])
+        if 'ver_hw_subtype' in ulog.msg_info_dict:
+            sys_hardware += ' (' + escape(ulog.msg_info_dict['ver_hw_subtype']) + ')'
+
+    # vehicle UUID (and name if provided). SITL does not have a (valid) UUID
+    vehicle_uuid = None
+    if 'sys_uuid' in ulog.msg_info_dict and sys_hardware != 'SITL' and \
+            sys_hardware != 'PX4_SITL':
+        sys_uuid = escape(ulog.msg_info_dict['sys_uuid'])
+        if len(sys_uuid) > 0:
+            vehicle_uuid = sys_uuid
+
+    def get_ulog_timerange(ulog):
+        """
+        Get UTC datetime range of log from GPS positions
+        """
+
+        gps_data = ulog.get_dataset('vehicle_gps_position')
+        indices = np.nonzero(gps_data.data['time_utc_usec'])
+
+        logging_start_time = int(gps_data.data['time_utc_usec'][indices[0][0]] / 1000000)
+        logging_end_time = int(gps_data.data['time_utc_usec'][indices[0][-1]] / 1000000)
+
+        utc_offset_min = ulog.initial_parameters.get('SDLOG_UTC_OFFSET', 0)
+
+        def get_utc_time(time):
+            timestamp = time + utc_offset_min * 60
+            tzinfo = datetime.timezone.utc
+            return datetime.datetime.utcfromtimestamp(timestamp).replace(tzinfo=tzinfo)
+
+        start_utc = get_utc_time(logging_start_time)
+        end_utc = get_utc_time(logging_end_time)
+
+        return {'start': start_utc, 'end': end_utc} 
+
+    timerange = get_ulog_timerange(ulog)
+
+    start_time_str = timerange['start']
+    end_time_str = timerange['end']
+
+    m, s = divmod(int((ulog.last_timestamp - ulog.start_timestamp)/1e6), 60)
+    h, m = divmod(m, 60)
+    duration = f'{h:d}:{m:02d}:{s:02d}'
+
+    rating = 'Fail'
+    if db_data.rating in ['good', 'great']:
+        rating = 'Pass'
+
+    # Total Hours Flown
+    flight_time_s = get_total_flight_time(ulog)
+    flight_time_str = ''
+    if flight_time_s is not None:
+        m, s = divmod(int(flight_time_s), 60)
+        h, m = divmod(m, 60)
+        days, h = divmod(h, 24)
+        if days > 0: flight_time_str += '{:d} days '.format(days)
+        if h > 0: flight_time_str += '{:d} hours '.format(h)
+        if m > 0: flight_time_str += '{:d} minutes '.format(m)
+        flight_time_str += '{:d} seconds '.format(s)
+
+    # Total Distance and Max Altitude Difference
+    distance = get_distance(ulog, vtol_states)
+
+    # Average and Max Speeds
+    speed = get_speed(ulog, vtol_states)
+    
+    # Average and Max Currents
+    current = get_current(ulog, vtol_states)
+
+    template = _ENV.get_template('faa_log_info.html')
+
+    template_args = {
+        'vehicle_uuid': vehicle_uuid,
+        'flight_time_str': flight_time_str,
+        'start_time_str': start_time_str,
+        'end_time_str': end_time_str,
+        'duration': duration,
+        'rating': rating,
+        'description': db_data.description,
+        'feedback': db_data.feedback,
+        'distance': distance,
+        'speed': speed,
+        'current': current,
+    }
+
+    return template.render(template_args)
 
 
 def get_error_labels_html():

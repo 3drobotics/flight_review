@@ -15,7 +15,8 @@ from pid_analysis import Trace, plot_pid_response
 from plotting import *
 from plotted_tables import (
     get_logged_messages, get_changed_parameters,
-    get_info_table_html, get_heading_html, get_error_labels_html,
+    get_faa_info_table_html, get_info_table_html,
+    get_heading_html, get_error_labels_html,
     get_hardfault_html, get_corrupt_log_html
     )
 
@@ -188,7 +189,7 @@ The analysis may take a while...
 
 
 def generate_plots(ulog, px4_ulog, db_data, vehicle_data, link_to_3d_page,
-                   link_to_pid_analysis_page):
+                   link_to_pid_analysis_page, faa):
     """ create a list of bokeh plots (and widgets) to show """
 
     plots = []
@@ -245,8 +246,11 @@ def generate_plots(ulog, px4_ulog, db_data, vehicle_data, link_to_3d_page,
         additional_links=[("Open PID Analysis", link_to_pid_analysis_page)])
 
     # info text on top (logging duration, max speed, ...)
-    curdoc().template_variables['info_table_html'] = \
-        get_info_table_html(ulog, px4_ulog, db_data, vehicle_data, vtol_states)
+    if faa:
+        info_table_html = get_faa_info_table_html(ulog, px4_ulog, db_data, vehicle_data, vtol_states)
+    else:
+        info_table_html = get_info_table_html(ulog, px4_ulog, db_data, vehicle_data, vtol_states)
+    curdoc().template_variables['info_table_html'] = info_table_html
 
     curdoc().template_variables['error_labels_html'] = get_error_labels_html()
 

@@ -78,6 +78,32 @@ tr .space-above > td {
 	padding-left: 4px;
 }
 
+.faa-table {
+  margin: 2em 0;
+}
+.faa-info {
+  display: grid; 
+  grid-template-columns: auto max-content; 
+  grid-column-gap: 0px;
+  grid-row-gap: 2em;
+  margin: 2em 0;
+}
+.faa-info dd { margin: 0 }
+.faa-info .left { grid-area: 1 / 1 / 2 / 2; } 
+.faa-info .left dd { margin-left: 1em; margin-bottom: 1em }
+.faa-info .right { grid-area: 1 / 2 / 2 / 3; } 
+.faa-info .right dl {
+  display: grid; 
+  grid-template-columns: auto auto;
+  grid-column-gap: 1em;
+  grid-row-gap: 0.5em;
+}
+.faa-info .right dd {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.faa-info .feedback { grid-area: 2 / 1 / 3 / 3; } 
+
 pre {
 	/* this is used for hardfaults, or to display performance counters
 	 * (this was in the official Bootstrap, but not in Bootswatch)
