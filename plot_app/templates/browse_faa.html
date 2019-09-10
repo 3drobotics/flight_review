@@ -12,12 +12,12 @@ this script</a> for automated download of public log files.
 	class="table table-sm table-striped table-bordered table-condensed">
         <thead>
             <tr>
-                <th>Drone ID</th>
-                <th>UAS Model</th>
-                <th>Start Hours</th>
-                <th>End Hours</th>
-                <th>Flight Duration</th>
-                <th>Flight Rating</th>
+                <th data-toggle="tooltip" title="Unique vehicle identification">Drone ID</th>
+                <th data-toggle="tooltip" title="Vehicle model identification">UAS Model</th>
+                <th data-toggle="tooltip" title="Local time stamp at the start of a flight">Start Hours</th>
+                <th data-toggle="tooltip" title="Local time stamp at the end of a flight">End Hours</th>
+                <th data-toggle="tooltip" title="Calculated time span of the flight">Flight Duration</th>
+                <th data-toggle="tooltip" title="<div>Tolerance criteria for Pass/Fail is:<ul><li>Aircraft follows predefined altitudes (+/- 10 ft)</li><li>Aircraft follows predefined flight track (+/- 10 ft)</li><li>Aircraft follow predefined speeds (+/- 2.5 mi/hr)</li><li>Aircraft lands at designated point (+/- 10 ft)</li></ul></div>">Flight Rating</th>
             </tr>
         </thead>
         <tbody>
@@ -82,6 +82,7 @@ $(document).ready(function() {
         }
     });
 
+    $('[data-toggle="tooltip"]').tooltip({ html: true });
 });
 
 </script>
