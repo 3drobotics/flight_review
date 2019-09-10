@@ -73,8 +73,8 @@ def generate_db_data_from_log_file(log_id, db_connection=None):
             'insert into LogsGenerated (Id, Duration, '
             'Mavtype, Estimator, AutostartId, Hardware, '
             'Software, NumLoggedErrors, NumLoggedWarnings, '
-            'FlightModes, SoftwareVersion, UUID, FlightModeDurations, StartTime) values '
-            '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'FlightModes, SoftwareVersion, UUID, FlightModeDurations, StartTime, VehicleFlightTime) values '
+            '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [log_id, db_data_gen.duration_s, db_data_gen.mav_type,
              db_data_gen.estimator, db_data_gen.sys_autostart_id,
              db_data_gen.sys_hw, db_data_gen.ver_sw,
@@ -83,7 +83,7 @@ def generate_db_data_from_log_file(log_id, db_connection=None):
              ','.join(map(str, db_data_gen.flight_modes)),
              db_data_gen.ver_sw_release, db_data_gen.vehicle_uuid,
              db_data_gen.flight_mode_durations_str(),
-             db_data_gen.start_time_utc])
+             db_data_gen.start_time_utc, db_data_gen.vehicle_flight_time])
         db_connection.commit()
     except sqlite3.IntegrityError:
         # someone else already inserted it (race). just ignore it
@@ -130,5 +130,6 @@ def get_generated_db_data_from_log(log_id, con, cur):
         db_data_gen.vehicle_uuid = db_tuple[11]
         db_data_gen.flight_mode_durations = \
             [tuple(map(int, x.split(':'))) for x in db_tuple[12].split(',') if len(x) > 0]
+        db_data_gen.vehicle_flight_time = db_tuple[13]
     return db_data_gen
 

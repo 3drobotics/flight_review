@@ -47,6 +47,7 @@ class BrowseFAADataRetrievalHandler(tornado.web.RequestHandler):
         ordering_col = ['LogsGenerated.UUID',
                         '', # UAS Model
                         'LogsGenerated.StartTime',
+                        'LogsGenerated.VehicleFlightTime',
                         '', # End Hours
                         'LogsGenerated.Duration',
                         '', # Flight Rating
@@ -62,7 +63,8 @@ class BrowseFAADataRetrievalHandler(tornado.web.RequestHandler):
                     '   LogsGenerated.Id, '
                     '   LogsGenerated.UUID, '
                     '   LogsGenerated.StartTime, '
-                    '   LogsGenerated.Duration '
+                    '   LogsGenerated.Duration, '
+                    '   LogsGenerated.VehicleFlightTime '
                     'FROM Logs '
                     '   LEFT JOIN LogsGenerated on Logs.Id=LogsGenerated.Id '
                     '   LEFT JOIN Vehicle on LogsGenerated.UUID=Vehicle.UUID '
@@ -90,19 +92,25 @@ class BrowseFAADataRetrievalHandler(tornado.web.RequestHandler):
                 db_data.vehicle_uuid = db_tuple[3]
                 db_data.start_time_utc = db_tuple[4]
                 db_data.duration_s = db_tuple[5]
+                db_data.vehicle_flight_time = db_tuple[6]
 
-            m, s = divmod(db_data.duration_s, 60)
-            h, m = divmod(m, 60)
-            duration_str = '{:d}:{:02d}:{:02d}'.format(h, m, s)
+            def format_duration(s):
+                m, s = divmod(round(s), 60)
+                h, m = divmod(m, 60)
+                return '{:d}:{:02d}:{:02d}'.format(h, m, s)
+
+            duration_str = format_duration(db_data.duration_s)
 
             start_time_str = 'N/A'
-            end_time_str = 'N/A'
             if db_data.start_time_utc != 0:
                 start_datetime = datetime.fromtimestamp(db_data.start_time_utc)
                 start_time_str = start_datetime.strftime("%Y-%m-%d  %H:%M")
-                end_time_utc = db_data.start_time_utc + db_data.duration_s
-                end_datetime = datetime.fromtimestamp(end_time_utc)
-                end_time_str = end_datetime.strftime("%Y-%m-%d  %H:%M")
+
+            start_hours_str = 'N/A'
+            end_hours_str = 'N/A'
+            if db_data.vehicle_flight_time is not None:
+                start_hours_str = format_duration(db_data.vehicle_flight_time)
+                end_hours_str = format_duration(db_data.vehicle_flight_time + db_data.duration_s)
 
             search_only_columns = []
 
@@ -117,7 +125,8 @@ class BrowseFAADataRetrievalHandler(tornado.web.RequestHandler):
                 db_data.vehicle_uuid,
                 'H520-G', # hardcoded 😱
                 '<a href="/plot_app?log='+log_id+'&faa=true">'+start_time_str+'</a>',
-                end_time_str,
+                start_hours_str,
+                end_hours_str,
                 duration_str,
                 rating_str,
             ], search_only_columns)

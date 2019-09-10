@@ -5,7 +5,7 @@ from html import escape
 from pyulog import *
 from pyulog.px4 import *
 
-from helper import get_log_filename, load_ulog_file
+from helper import get_log_filename, load_ulog_file, get_total_flight_time
 
 #pylint: disable=missing-docstring, too-few-public-methods
 
@@ -72,6 +72,7 @@ class DBDataGenerated:
         self.flight_modes = set()
         self.vehicle_uuid = ''
         self.flight_mode_durations = [] # list of tuples of (mode, duration sec)
+        self.vehicle_flight_time = None
         super().__init__()
 
     def flight_mode_durations_str(self):
@@ -140,6 +141,7 @@ class DBDataGenerated:
             # Ignore. Eg. if topic not found
             pass
 
+        obj.vehicle_flight_time = get_total_flight_time(ulog)
 
         return obj
 

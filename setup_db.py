@@ -112,6 +112,7 @@ with con:
                 "UUID TEXT, " # vehicle UUID (sys_uuid in log)
                 "FlightModeDurations TEXT, " # comma-separated list of <flight_mode_int>:<duration_sec>
                 "StartTime INT, " #UTC Timestap from GPS log (useful when uploading multiple logs)
+                "VehicleFlightTime INT, " # Seconds of lifetime flight time at start of flight
                 "CONSTRAINT Id_PK PRIMARY KEY (Id))")
 
     else:
@@ -130,6 +131,9 @@ with con:
         if not 'StartTime' in column_names:
             print('Adding column StartTime')
             cur.execute("ALTER TABLE LogsGenerated ADD COLUMN StartTime INT DEFAULT 0")
+        if not 'VehicleFlightTime' in column_names:
+            print('Adding column VehicleFlightTime')
+            cur.execute("ALTER TABLE LogsGenerated ADD COLUMN VehicleFlightTime INT")
 
 
     # Vehicle table (contains information about a vehicle)
