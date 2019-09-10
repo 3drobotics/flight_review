@@ -1,0 +1,14 @@
+<header class="title">
+    <div>
+        <h3>{{ title }}</h3>
+{% if description %}
+        <h5>{{ description }}</h5>
+{% endif %}
+    </div>
+
+    <div>
+{% for label, url in links %}
+        <a class="btn btn-outline-primary" href="{{ url }}">{{ label }}</a>
+{% endfor %}
+    </div>
+</header>

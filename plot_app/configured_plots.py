@@ -15,9 +15,9 @@ from pid_analysis import Trace, plot_pid_response
 from plotting import *
 from plotted_tables import (
     get_logged_messages, get_changed_parameters,
-    get_faa_info_table_html, get_info_table_html,
-    get_heading_html, get_error_labels_html,
-    get_hardfault_html, get_corrupt_log_html
+    get_faa_heading_html, get_faa_info_table_html,
+    get_info_table_html, get_heading_html,
+    get_error_labels_html, get_hardfault_html, get_corrupt_log_html
     )
 
 #pylint: disable=cell-var-from-loop, undefined-loop-variable,
@@ -241,9 +241,21 @@ def generate_plots(ulog, px4_ulog, db_data, vehicle_data, link_to_3d_page,
 
 
     # Heading
-    curdoc().template_variables['title_html'] = get_heading_html(
-        ulog, px4_ulog, db_data, link_to_3d_page,
-        additional_links=[("Open PID Analysis", link_to_pid_analysis_page)])
+    if faa:
+        links = [('Explain Report', 'https://docs.px4.io/en/log/flight_review.html')]
+
+        if link_to_3d_page is not None and \
+            any(elem.name == 'vehicle_global_position' for elem in ulog.data_list):
+            links.append(('Replay Flight', link_to_3d_page))
+        
+        links.append(("Analyze Flight", link_to_pid_analysis_page))
+
+        title_html = get_faa_heading_html(ulog, px4_ulog, db_data, links)
+    else:
+        title_html = get_heading_html(
+            ulog, px4_ulog, db_data, link_to_3d_page,
+            additional_links=[("Open PID Analysis", link_to_pid_analysis_page)])
+    curdoc().template_variables['title_html'] = title_html
 
     # info text on top (logging duration, max speed, ...)
     if faa:
@@ -874,7 +886,8 @@ def generate_plots(ulog, px4_ulog, db_data, vehicle_data, link_to_3d_page,
 
 
     # changed parameters
-    plots.append(get_changed_parameters(ulog.initial_parameters, plot_width))
+    if not faa:
+        plots.append(get_changed_parameters(ulog.initial_parameters, plot_width))
 
 
 
@@ -897,7 +910,8 @@ def generate_plots(ulog, px4_ulog, db_data, vehicle_data, link_to_3d_page,
 
 
     # log messages
-    plots.append(get_logged_messages(ulog.logged_messages, plot_width))
+    if not faa:
+        plots.append(get_logged_messages(ulog.logged_messages, plot_width))
 
 
     # console messages, perf & top output

@@ -61,6 +61,9 @@ def get_heading_html(ulog, px4_ulog, db_data, link_to_3d_page,
     Get the html (as string) for the heading information (plots title)
     :param additional_links: list of (label, link) tuples
     """
+
+    title_html = ("<div class='alert alert-primary'>Do you need help with interpreting the plots? See <a href='https://docs.px4.io/en/log/flight_review.html' target='_blank' class='alert-link'>here</a>.</div>")
+
     sys_name = ''
     if 'sys_name' in ulog.msg_info_dict:
         sys_name = escape(ulog.msg_info_dict['sys_name']) + ' '
@@ -80,12 +83,34 @@ def get_heading_html(ulog, px4_ulog, db_data, link_to_3d_page,
 
     if title_suffix != '': title_suffix = ' - ' + title_suffix
 
-    title_html = ("<table width='100%'><tr><td><h3>"+sys_name + px4_ulog.get_mav_type()+
+    title_html += ("<table width='100%'><tr><td><h3>"+sys_name + px4_ulog.get_mav_type()+
                   title_suffix+"</h3></td><td align='right'>" + link_to_3d +
                   added_links+"</td></tr></table>")
     if db_data.description != '':
         title_html += "<h5>"+db_data.description+"</h5>"
     return title_html
+
+def get_faa_heading_html(ulog, px4_ulog, db_data, links=None):
+    """
+    Get the html (as string) for the FAA heading information (plots title)
+    :param links: list of (label, link) tuples
+    """
+    
+    sys_name = ''
+    if 'sys_name' in ulog.msg_info_dict:
+        sys_name = escape(ulog.msg_info_dict['sys_name']) + ' '
+
+    title = sys_name + px4_ulog.get_mav_type()
+
+    template = _ENV.get_template('faa_heading.html')
+
+    template_args = {
+        'title': title,
+        'description': db_data.description,
+        'links': links,
+    }
+
+    return template.render(template_args)
 
 def get_speed(ulog, vtol_states):
     """
@@ -189,8 +214,11 @@ def get_distance(ulog, vtol_states):
     }
 
     if len(pos_z) > 0:
-        max_alt_diff = np.amax(pos_z) - np.amin(pos_z)
-        distance['Max Altitude Difference'] = max_alt_diff
+        distance['Max Altitude Difference'] = np.amax(pos_z) - np.amin(pos_z)
+
+    vehicle_global_position = next((d for d in ulog.data_list if d.name == 'vehicle_global_position'), None)
+    if vehicle_global_position:
+        distance['Max Global Altitude'] = max(vehicle_global_position.data['alt'])
 
     return distance
 

@@ -65,6 +65,7 @@ class BrowseFAADataRetrievalHandler(tornado.web.RequestHandler):
                     '   LogsGenerated.Duration '
                     'FROM Logs '
                     '   LEFT JOIN LogsGenerated on Logs.Id=LogsGenerated.Id '
+                    '   LEFT JOIN Vehicle on LogsGenerated.UUID=Vehicle.UUID '
                     'WHERE Logs.Public = 1 AND NOT Logs.Source = "CI" '
                     +sql_order)
 

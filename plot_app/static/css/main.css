@@ -78,6 +78,17 @@ tr .space-above > td {
 	padding-left: 4px;
 }
 
+header.title {
+  display: grid; 
+  grid-template-columns: repeat(2, 1fr);
+  grid-column-gap: 0px;
+  grid-row-gap: 0px;
+}
+
+header.title div:last-child {
+  text-align: right;
+}
+
 .faa-table {
   margin: 2em 0;
 }

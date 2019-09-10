@@ -1,12 +1,12 @@
 <table class="table table-sm table-striped table-bordered table-condensed faa-table">
     <thead>
         <tr>
-            <th>Drone ID</th>
-            <th>UAS Model</th>
-            <th>Start Hours</th>
-            <th>End Hours</th>
-            <th>Flight Duration</th>
-            <th>Flight Rating</th>
+            <th data-toggle="tooltip" title="Unique vehicle identification">Drone ID</th>
+            <th data-toggle="tooltip" title="Vehicle model identification">UAS Model</th>
+            <th data-toggle="tooltip" title="Local time stamp at the start of a flight">Start Hours</th>
+            <th data-toggle="tooltip" title="Local time stamp at the end of a flight">End Hours</th>
+            <th data-toggle="tooltip" title="Calculated time span of the flight">Flight Duration</th>
+            <th data-toggle="tooltip" title="<div>Tolerance criteria for Pass/Fail is:<ul><li>Aircraft follows predefined altitudes (+/- 10 ft)</li><li>Aircraft follows predefined flight track (+/- 10 ft)</li><li>Aircraft follow predefined speeds (+/- 2.5 mi/hr)</li><li>Aircraft lands at designated point (+/- 10 ft)</li></ul></div>">Flight Rating</th>
         </tr>
     </thead>
     <tbody>
@@ -21,11 +21,13 @@
     </tbody>
 </table>
 
+
+
 <section class="faa-info">
     <dl class="left">
         <dt>Description</dt>
         <dd>{{ description }}</dd>
-        <dt>Total Hours Flown</dt>
+        <dt data-toggle="tooltip" title="Accumulated hours of vehicle in use">Total Airframe Hours</dt>
         <dd>{{ flight_time_str }}</dd>
         <dt>Flight Conditions</dt>
         <dd>{{ feedback|replace('\n', '<br/>') }}</dd>
@@ -34,10 +36,14 @@
     <section class="right">
         <dl>
 {% if distance['Max Altitude Difference'] %}
-            <dt>Max Altitude</dt>
+            <dt data-toggle="tooltip" data-placement="left" title="Maximum flight altitude above ground level">Max AGL</dt>
             <dd>{{ "%.0f"|format(distance['Max Altitude Difference'] * 3.28084) }} ft</dd>
 {% endif %}
-            <dt>Distance</dt>
+{% if distance['Max Global Altitude'] %}
+            <dt data-toggle="tooltip" data-placement="left" title="Maximum flight altitude above sea level">Max MSL</dt>
+            <dd>{{ "%.0f"|format(distance['Max Global Altitude'] * 3.28084) }} ft</dd>
+{% endif %}
+            <dt data-toggle="tooltip" data-placement="left" title="Accumulated flight distance">Distance Flown</dt>
 {% if distance['Absolute'] / 1609.34 > 1 %}
             <dd>{{ "%.2f"|format(distance['Absolute'] / 1609.34) }} mi</dd>
 {% else %}
@@ -46,30 +52,30 @@
         </dl>
         <dl>
 {% if speed['Average Speed'] %}
-            <dt>Avg Speed</dt>
-            <dd>{{ "%.1f"|format(speed['Average Speed']) }} mph</dd>
+            <dt data-toggle="tooltip" data-placement="left" title="Average speed during flight">Avg Speed</dt>
+            <dd>{{ "%.1f"|format(speed['Average Speed'] * 2.2369) }} mph</dd>
 {% endif %}
 {% if speed['Average Speed MC'] %}
-            <dt>Avg Speed MC</dt>
-            <dd>{{ "%.1f"|format(speed['Average Speed MC']) }} mph</dd>
+            <dt data-toggle="tooltip" data-placement="left" title="Average speed during flight (multi copter)">Avg Speed MC</dt>
+            <dd>{{ "%.1f"|format(speed['Average Speed MC'] * 2.2369) }} mph</dd>
 {% endif %}
 {% if speed['Average Speed FW'] %}
-            <dt>Avg Speed FW</dt>
-            <dd>{{ "%.1f"|format(speed['Average Speed FW']) }} mph</dd>
+            <dt data-toggle="tooltip" data-placement="left" title="Average speed during flight (fixed wing)">Avg Speed FW</dt>
+            <dd>{{ "%.1f"|format(speed['Average Speed FW'] * 2.2369) }} mph</dd>
 {% endif %}
-            <dt>Max Speed</dt>
-            <dd>{{ "%.1f"|format(speed['Max Speed']) }} mph</dd>
-            <dt>Max Speed Horz</dt>
-            <dd>{{ "%.1f"|format(speed['Max Speed Horizontal']) }} mph</dd>
-            <dt>Max Speed Up</dt>
-            <dd>{{ "%.1f"|format(speed['Max Speed Up']) }} mph</dd>
-            <dt>Max Speed Down</dt>
-            <dd>{{ "%.1f"|format(speed['Max Speed Down']) }} mph</dd>
+            <dt data-toggle="tooltip" data-placement="left" title="Maximum speed during flight">Max Speed</dt>
+            <dd>{{ "%.1f"|format(speed['Max Speed'] * 2.2369) }} mph</dd>
+            <dt data-toggle="tooltip" data-placement="left" title="Maximum horizontal speed during flight">Max Speed Horz</dt>
+            <dd>{{ "%.1f"|format(speed['Max Speed Horizontal'] * 2.2369) }} mph</dd>
+            <dt data-toggle="tooltip" data-placement="left" title="Maximum vertical accent speed during flight">Max Speed Up</dt>
+            <dd>{{ "%.1f"|format(speed['Max Speed Up'] * 2.2369) }} mph</dd>
+            <dt data-toggle="tooltip" data-placement="left" title="Maximum vertical decent speed during flight">Max Speed Down</dt>
+            <dd>{{ "%.1f"|format(speed['Max Speed Down'] * 2.2369) }} mph</dd>
         </dl>
         <dl>
-            <dt>Avg Current</dt>
+            <dt data-toggle="tooltip" data-placement="left" title="Average amperage drawn from the battery during flight">Avg Current</dt>
             <dd>{{ "%.1f"|format(current['Average Current']) }} A</dd>
-            <dt>Max Current</dt>
+            <dt data-toggle="tooltip" data-placement="left" title="Maximum amperage drawn from the battery during flight">Max Current</dt>
             <dd>{{ "%.1f"|format(current['Max Current']) }} A</dd>
         </dl>
     </section>
