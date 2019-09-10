@@ -55,7 +55,7 @@ def generate_db_data_from_log_file(log_id, db_connection=None):
     the LogsGenerated table (faster information retrieval later on).
     This is an expensive operation.
     It's ok to call this a second time for the same log, the call will just
-    silently fail (but still read the whole log and will not update the DB entry)
+    read the whole log again and update the DB entry.
 
     :return: DBDataGenerated object
     """
@@ -70,7 +70,7 @@ def generate_db_data_from_log_file(log_id, db_connection=None):
     db_cursor = db_connection.cursor()
     try:
         db_cursor.execute(
-            'insert into LogsGenerated (Id, Duration, '
+            'insert or replace into LogsGenerated (Id, Duration, '
             'Mavtype, Estimator, AutostartId, Hardware, '
             'Software, NumLoggedErrors, NumLoggedWarnings, '
             'FlightModes, SoftwareVersion, UUID, FlightModeDurations, StartTime, VehicleFlightTime) values '
