@@ -113,10 +113,10 @@ set_log_id_is_filename(show_ulog_file)
 # additional request handlers
 extra_patterns = [
     (r'/upload', UploadHandler),
-    (r'/browse', BrowseHandler),
-    (r'/browse_data_retrieval', BrowseDataRetrievalHandler),
-    (r'/faa/browse', BrowseFAAHandler),
-    (r'/faa/browse_data_retrieval', BrowseFAADataRetrievalHandler),
+    (r'/old/browse', BrowseHandler),
+    (r'/old/browse_data_retrieval', BrowseDataRetrievalHandler),
+    (r'/browse', BrowseFAAHandler),
+    (r'/browse_data_retrieval', BrowseFAADataRetrievalHandler),
     (r'/3d', ThreeDHandler),
     (r'/radio_controller', RadioControllerHandler),
     (r'/edit_entry', EditEntryHandler),

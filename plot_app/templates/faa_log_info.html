@@ -3,8 +3,8 @@
         <tr>
             <th data-toggle="tooltip" title="Unique vehicle identification">Drone ID</th>
             <th data-toggle="tooltip" title="Vehicle model identification">UAS Model</th>
-            <th data-toggle="tooltip" title="Local time stamp at the start of a flight">Start Hours</th>
-            <th data-toggle="tooltip" title="Local time stamp at the end of a flight">End Hours</th>
+            <th data-toggle="tooltip" title="Accumulated hours of vechicle in use before flight">Start Hours</th>
+            <th data-toggle="tooltip" title="Accumulated hours of vechicle in use after flight">End Hours</th>
             <th data-toggle="tooltip" title="Calculated time span of the flight">Flight Duration</th>
             <th data-toggle="tooltip" title="<div>Tolerance criteria for Pass/Fail is:<ul><li>Aircraft follows predefined altitudes (+/- 10 ft)</li><li>Aircraft follows predefined flight track (+/- 10 ft)</li><li>Aircraft follow predefined speeds (+/- 2.5 mi/hr)</li><li>Aircraft lands at designated point (+/- 10 ft)</li></ul></div>">Flight Rating</th>
         </tr>
@@ -13,22 +13,18 @@
         <tr>
             <td>{{ vehicle_uuid }}</td>
             <td>H520-G</td>
-            <td><time datetime="{{ start_time_str }}">{{ start_time_str }}</time></td>
-            <td><time datetime="{{ start_time_str }}">{{ end_time_str }}</time></td>
+            <td>{{ start_hours_str }}</td>
+            <td>{{ end_hours_str }}</td>
             <td>{{ duration }}</td>
             <td>{{ rating }}</td>
         </tr>
     </tbody>
 </table>
 
-
-
 <section class="faa-info">
     <dl class="left">
         <dt>Description</dt>
         <dd>{{ description }}</dd>
-        <dt data-toggle="tooltip" title="Accumulated hours of vehicle in use">Total Airframe Hours</dt>
-        <dd>{{ flight_time_str }}</dd>
         <dt>Flight Conditions</dt>
         <dd>{{ feedback|replace('\n', '<br/>') }}</dd>
     </dl>
@@ -80,13 +76,3 @@
         </dl>
     </section>
 </section>
-
-<script>
-{
-    // display times in local timezone
-    var times = document.querySelectorAll('time[datetime]');
-    for (var i = 0; i < times.length; i += 1) {
-        times[i].innerText = new Date(times[i].getAttribute('datetime')).toLocaleString();
-    }
-}
-</script>

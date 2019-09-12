@@ -230,9 +230,9 @@ else:
             link_to_pid_analysis_page = '?plots=pid_analysis&log='+log_id
 
             try:
-                faa = False
-                if 'faa' in GET_arguments:
-                    faa = True
+                faa = True
+                if 'old' in GET_arguments:
+                    faa = False
                 plots = generate_plots(ulog, px4_ulog, db_data, vehicle_data,
                                        link_to_3d_page, link_to_pid_analysis_page,
                                        faa)

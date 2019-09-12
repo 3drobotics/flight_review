@@ -544,61 +544,36 @@ def get_faa_info_table_html(ulog, px4_ulog, db_data, vehicle_data, vtol_states):
         sys_uuid = escape(ulog.msg_info_dict['sys_uuid'])
         if len(sys_uuid) > 0:
             vehicle_uuid = sys_uuid
+    
+    
+    def format_duration(s):
+        m, s = divmod(round(s), 60)
+        h, m = divmod(m, 60)
+        return f'{h:d}:{m:02d}:{s:02d}'
 
-    def get_ulog_timerange(ulog):
-        """
-        Get UTC datetime range of log from GPS positions
-        """
+    start_hours_str = 'N/A'
+    end_hours_str = 'N/A'
 
-        gps_data = ulog.get_dataset('vehicle_gps_position')
-        indices = np.nonzero(gps_data.data['time_utc_usec'])
+    duration_s = int((ulog.last_timestamp - ulog.start_timestamp)/1e6);
 
-        logging_start_time = int(gps_data.data['time_utc_usec'][indices[0][0]] / 1000000)
-        logging_end_time = int(gps_data.data['time_utc_usec'][indices[0][-1]] / 1000000)
+    # Total Hours Flown
+    flight_time_s = get_total_flight_time(ulog)
+    if flight_time_s is not None:
+        start_hours_str = format_duration(flight_time_s)
+        end_hours_str = format_duration(flight_time_s + duration_s)
 
-        utc_offset_min = ulog.initial_parameters.get('SDLOG_UTC_OFFSET', 0)
-
-        def get_utc_time(time):
-            timestamp = time + utc_offset_min * 60
-            tzinfo = datetime.timezone.utc
-            return datetime.datetime.utcfromtimestamp(timestamp).replace(tzinfo=tzinfo)
-
-        start_utc = get_utc_time(logging_start_time)
-        end_utc = get_utc_time(logging_end_time)
-
-        return {'start': start_utc, 'end': end_utc} 
-
-    timerange = get_ulog_timerange(ulog)
-
-    start_time_str = timerange['start']
-    end_time_str = timerange['end']
-
-    m, s = divmod(int((ulog.last_timestamp - ulog.start_timestamp)/1e6), 60)
-    h, m = divmod(m, 60)
-    duration = f'{h:d}:{m:02d}:{s:02d}'
+    duration = format_duration(duration_s)
 
     rating = 'Fail'
     if db_data.rating in ['good', 'great']:
         rating = 'Pass'
-
-    # Total Hours Flown
-    flight_time_s = get_total_flight_time(ulog)
-    flight_time_str = ''
-    if flight_time_s is not None:
-        m, s = divmod(int(flight_time_s), 60)
-        h, m = divmod(m, 60)
-        days, h = divmod(h, 24)
-        if days > 0: flight_time_str += '{:d} days '.format(days)
-        if h > 0: flight_time_str += '{:d} hours '.format(h)
-        if m > 0: flight_time_str += '{:d} minutes '.format(m)
-        flight_time_str += '{:d} seconds '.format(s)
 
     # Total Distance and Max Altitude Difference
     distance = get_distance(ulog, vtol_states)
 
     # Average and Max Speeds
     speed = get_speed(ulog, vtol_states)
-    
+
     # Average and Max Currents
     current = get_current(ulog, vtol_states)
 
@@ -606,9 +581,8 @@ def get_faa_info_table_html(ulog, px4_ulog, db_data, vehicle_data, vtol_states):
 
     template_args = {
         'vehicle_uuid': vehicle_uuid,
-        'flight_time_str': flight_time_str,
-        'start_time_str': start_time_str,
-        'end_time_str': end_time_str,
+        'start_hours_str': start_hours_str,
+        'end_hours_str': end_hours_str,
         'duration': duration,
         'rating': rating,
         'description': db_data.description,
