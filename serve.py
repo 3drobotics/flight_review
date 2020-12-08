@@ -8,6 +8,7 @@ import argparse
 import os
 import sys
 import errno
+import runpy
 
 from bokeh.application import Application
 from bokeh.server.server import Server
@@ -16,12 +17,15 @@ from bokeh.application.handlers import DirectoryHandler
 from tornado.web import StaticFileHandler
 
 # this is needed for the following imports
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'plot_app'))
+
+
+
 from tornado.web import RedirectHandler
 from tornado_handlers.download import DownloadHandler
 from tornado_handlers.upload import UploadHandler
 from tornado_handlers.browse import BrowseHandler, BrowseDataRetrievalHandler
-from tornado_handlers.browse_faa import BrowseFAAHandler, BrowseFAADataRetrievalHandler
+from tornado_handlers.browse2 import Browse2Handler, Browse2DataRetrievalHandler
+from tornado_handlers.top import TopHandler
 from tornado_handlers.edit_entry import EditEntryHandler
 from tornado_handlers.db_info_json import DBInfoHandler
 from tornado_handlers.three_d import ThreeDHandler
@@ -31,7 +35,40 @@ from tornado_handlers.error_labels import UpdateErrorLabelHandler
 from helper import set_log_id_is_filename, print_cache_info
 from config import debug_print_timing, get_overview_img_filepath
 
-#pylint: disable=invalid-name
+
+import px4tools
+import numpy as np
+import math
+import io
+import os
+import sys
+import errno
+from plotting import DataPlot
+from functools import lru_cache
+from os.path import dirname, join
+from bokeh.io import output_file, show
+from bokeh.models.widgets import FileInput
+from bokeh.models.widgets import Paragraph
+from bokeh.models import CheckboxGroup
+from bokeh.models import RadioButtonGroup
+from bokeh.models import Range1d
+from bokeh.server.server import Server
+from bokeh.themes import Theme
+from bokeh.application.handlers import DirectoryHandler
+
+
+import time
+import copy
+from bokeh.models import Div
+
+
+import pandas as pd
+import argparse
+
+from bokeh.layouts import column, row
+from bokeh.models import ColumnDataSource, PreText, Select
+from bokeh.plotting import figure
+
 
 def _fixup_deprecated_host_args(arguments):
     # --host is deprecated since bokeh 0.12.5. You might want to use
@@ -55,6 +92,8 @@ parser.add_argument('--3d', dest='threed', action='store_true',
                     help='Open 3D page (only if --file is provided)')
 parser.add_argument('--pid-analysis', dest='pid_analysis', action='store_true',
                     help='Open PID analysis page (only if --file is provided)')
+parser.add_argument('--thiel', dest='thiel', action='store_true',
+                    help='Open Thiel analysis page (only if --file is provided)')                    
 parser.add_argument('--num-procs', dest='numprocs', type=int, action='store',
                     help="""Number of worker processes. Default to 1.
                     0 will autodetect number of cores""",
@@ -78,10 +117,6 @@ args = parser.parse_args()
 # This should remain here until --host is removed entirely
 _fixup_deprecated_host_args(args)
 
-applications = {}
-main_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'plot_app')
-handler = DirectoryHandler(filename=main_path)
-applications['/plot_app'] = Application(handler)
 
 server_kwargs = {}
 if args.port is not None: server_kwargs['port'] = args.port
@@ -100,6 +135,9 @@ server_kwargs['http_server_kwargs'] = {'max_buffer_size': 300 * 1024 * 1024}
 show_ulog_file = False
 show_3d_page = False
 show_pid_analysis_page = False
+show_thiel = False
+if args.thiel: 
+    show_thiel = True
 if args.file is not None:
     ulog_file = os.path.abspath(args.file)
     show_ulog_file = True
@@ -107,26 +145,42 @@ if args.file is not None:
     show_3d_page = args.threed
     show_pid_analysis_page = args.pid_analysis
 
+
+applications = {}
+
+
+if args.show:
+    thiel_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'thiel_app')
+    handler = DirectoryHandler(filename=thiel_path)
+    sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'thiel_app'))
+    applications['/plot_app'] = Application(handler)
+    applications['/thiel_app'] = Application(handler)
+
+
+
 set_log_id_is_filename(show_ulog_file)
 
 
 # additional request handlers
 extra_patterns = [
     (r'/upload', UploadHandler),
-    (r'/old/browse', BrowseHandler),
-    (r'/old/browse_data_retrieval', BrowseDataRetrievalHandler),
-    (r'/browse', BrowseFAAHandler),
-    (r'/browse_data_retrieval', BrowseFAADataRetrievalHandler),
+    (r'/browse', BrowseHandler),
+    (r'/browse_data_retrieval', BrowseDataRetrievalHandler),
+    (r'/browse2', Browse2Handler),
+    (r'/browse2_data_retrieval', Browse2DataRetrievalHandler),
     (r'/3d', ThreeDHandler),
     (r'/radio_controller', RadioControllerHandler),
     (r'/edit_entry', EditEntryHandler),
-    (r'/?', UploadHandler), #root should point to upload
+    (r'/?', TopHandler), 
     (r'/download', DownloadHandler),
     (r'/dbinfo', DBInfoHandler),
+    (r'/top', TopHandler),
     (r'/error_label', UpdateErrorLabelHandler),
     (r"/stats", RedirectHandler, {"url": "/plot_app?stats=1"}),
     (r'/overview_img/(.*)', StaticFileHandler, {'path': get_overview_img_filepath()}),
 ]
+
+
 
 server = None
 custom_port = 5006
@@ -142,6 +196,8 @@ while server is None:
         else:
             raise
 
+
+
 if args.show:
     # we have to defer opening in browser until we start up the server
     def show_callback():
@@ -153,8 +209,11 @@ if args.show:
                 server.show('/plot_app?plots=pid_analysis&log='+ulog_file)
             else:
                 server.show('/plot_app?log='+ulog_file)
+        elif show_thiel:
+            print("showing Thiel app")
+            server.show('/thiel_app')
         else:
-            server.show('/upload')
+            server.show('/top')
     server.io_loop.add_callback(show_callback)
 
 
